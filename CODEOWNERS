@@ -1,0 +1,21 @@
+# Veyra Code Owners
+# These users will be automatically requested for review on PRs
+
+# Default owners for everything
+* @khaaliswooden-max
+
+# Core system
+/src/veyra/core.py @khaaliswooden-max
+/src/veyra/config.py @khaaliswooden-max
+
+# Security-sensitive areas (require explicit review)
+/src/veyra/governance/ @khaaliswooden-max
+/src/veyra/tools/safety.py @khaaliswooden-max
+SECURITY.md @khaaliswooden-max
+
+# CI/CD
+/.github/ @khaaliswooden-max
+
+# Documentation
+/docs/ @khaaliswooden-max
+README.md @khaaliswooden-max
