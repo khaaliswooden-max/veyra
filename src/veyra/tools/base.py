@@ -118,7 +118,7 @@ class ToolRegistry:
     Provides discovery, validation, and invocation of registered tools.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._tools: dict[str, Tool] = {}
         self._invocation_log: list[dict[str, Any]] = []
 

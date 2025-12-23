@@ -157,6 +157,8 @@ class AuditTrail:
 
     def _append_to_file(self, entry: AuditEntry) -> None:
         """Append entry to persistent storage."""
+        if self._persist_path is None:
+            return
         with open(self._persist_path, "a") as f:
             f.write(json.dumps(entry.to_dict()) + "\n")
 

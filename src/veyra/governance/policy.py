@@ -123,8 +123,8 @@ class PolicyEngine:
             )
 
         # Evaluate policies in priority order
-        deny_reasons = []
-        audit_policies = []
+        deny_reasons: list[str] = []
+        audit_policies: list[str] = []
 
         for policy in applicable:
             try:
