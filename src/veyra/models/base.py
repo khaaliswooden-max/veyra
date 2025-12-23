@@ -6,8 +6,8 @@ Defines the abstract interface that all model backends must implement.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Optional
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
 
 
 @dataclass
@@ -19,7 +19,7 @@ class ModelResponse:
     backend: str
 
     # Metadata
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     latency_ms: float = 0.0
 
     # Token usage
@@ -28,11 +28,11 @@ class ModelResponse:
     total_tokens: int = 0
 
     # Audit trail
-    request_id: Optional[str] = None
-    trace_id: Optional[str] = None
+    request_id: str | None = None
+    trace_id: str | None = None
 
     # Raw response for debugging
-    raw_response: Optional[dict[str, Any]] = None
+    raw_response: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -60,7 +60,7 @@ class BaseModelBackend(ABC):
         self,
         prompt: str,
         *,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 4096,
         **kwargs: Any,

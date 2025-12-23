@@ -3,11 +3,12 @@ Tests for Model Backends
 """
 
 import pytest
+
 from veyra.models import (
-    get_backend,
-    list_backends,
     MockBackend,
     ModelResponse,
+    get_backend,
+    list_backends,
 )
 
 

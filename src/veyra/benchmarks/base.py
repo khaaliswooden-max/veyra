@@ -4,12 +4,12 @@ Benchmark Base Classes
 Defines the interface for Veyra benchmarks.
 """
 
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional
-import uuid
+from typing import Any
 
 
 class BenchmarkFamily(Enum):
@@ -46,7 +46,7 @@ class BenchmarkTask:
     context: dict[str, Any] = field(default_factory=dict)
 
     # Expected output
-    expected_output: Optional[str] = None
+    expected_output: str | None = None
     validation_criteria: dict[str, Any] = field(default_factory=dict)
 
     # Constraints
@@ -77,7 +77,7 @@ class BenchmarkResult:
     scoring_breakdown: dict[str, float] = field(default_factory=dict)
 
     # Metadata
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     model_backend: str = ""
 
     def to_dict(self) -> dict[str, Any]:
@@ -101,7 +101,7 @@ class BenchmarkResult:
 class BenchmarkSuiteResult:
     """Aggregated results from a benchmark suite run."""
 
-    family: Optional[BenchmarkFamily] = None  # None = full suite
+    family: BenchmarkFamily | None = None  # None = full suite
 
     # Aggregate scores
     total_tasks: int = 0
@@ -121,7 +121,7 @@ class BenchmarkSuiteResult:
     results: list[BenchmarkResult] = field(default_factory=list)
 
     # Metadata
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -188,15 +188,15 @@ class Benchmark(ABC):
 
     def validate_output(
         self,
-        task: BenchmarkTask,
-        output: str,
+        _task: BenchmarkTask,
+        _output: str,
     ) -> tuple[bool, list[str]]:
         """
         Validate output against criteria.
 
         Args:
-            task: The original task
-            output: Model output
+            _task: The original task
+            _output: Model output
 
         Returns:
             Tuple of (is_valid, error_messages)

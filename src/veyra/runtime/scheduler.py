@@ -5,12 +5,13 @@ Manages task execution with support for queuing, priorities, and fault tolerance
 """
 
 import asyncio
-import uuid
-from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum
-from typing import Any, Awaitable, Callable, Optional
 import heapq
+import uuid
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from enum import Enum
+from typing import Any
 
 
 class TaskStatus(Enum):
@@ -45,7 +46,7 @@ class Task:
     payload: dict[str, Any] = field(compare=False, default_factory=dict)
     status: TaskStatus = field(compare=False, default=TaskStatus.PENDING)
     result: Any = field(compare=False, default=None)
-    error: Optional[str] = field(compare=False, default=None)
+    error: str | None = field(compare=False, default=None)
     retries: int = field(compare=False, default=0)
     max_retries: int = field(compare=False, default=3)
 
@@ -59,7 +60,7 @@ class Task:
         """Create a new task."""
         return cls(
             priority=priority.value,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
             name=name,
             payload=payload,
         )
@@ -148,7 +149,7 @@ class TaskScheduler:
 
             task.status = TaskStatus.COMPLETED
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             task.error = "Task timed out"
             task.status = TaskStatus.FAILED
         except Exception as e:
@@ -171,7 +172,7 @@ class TaskScheduler:
             # Continue processing
             asyncio.create_task(self._process_queue())
 
-    async def get_status(self, task_id: str) -> Optional[Task]:
+    async def get_status(self, task_id: str) -> Task | None:
         """Get task status."""
         if task_id in self._running:
             return self._running[task_id]

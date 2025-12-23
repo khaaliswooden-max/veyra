@@ -7,8 +7,7 @@ Provides consistent, structured logging across all Veyra components.
 import json
 import logging
 import sys
-from datetime import datetime
-from typing import Any, Optional, Union
+from datetime import UTC, datetime
 
 
 class StructuredFormatter(logging.Formatter):
@@ -16,7 +15,7 @@ class StructuredFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         log_data = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -79,7 +78,7 @@ class PrettyFormatter(logging.Formatter):
         reset = self.RESET if color else ""
 
         # Format base message
-        timestamp = datetime.utcnow().strftime("%H:%M:%S")
+        timestamp = datetime.now(UTC).strftime("%H:%M:%S")
         base = f"{color}{timestamp} [{record.levelname:7}]{reset} {record.name}: {record.getMessage()}"
 
         # Add extra fields
@@ -125,7 +124,7 @@ class PrettyFormatter(logging.Formatter):
 def setup_logging(
     level: str = "INFO",
     structured: bool = False,
-    log_file: Optional[str] = None,
+    log_file: str | None = None,
 ) -> None:
     """
     Configure logging for the entire application.
@@ -142,11 +141,9 @@ def setup_logging(
     root_logger.handlers.clear()
 
     # Choose formatter
-    formatter: Union[StructuredFormatter, PrettyFormatter]
-    if structured:
-        formatter = StructuredFormatter()
-    else:
-        formatter = PrettyFormatter()
+    formatter: StructuredFormatter | PrettyFormatter = (
+        StructuredFormatter() if structured else PrettyFormatter()
+    )
 
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
@@ -162,7 +159,7 @@ def setup_logging(
 
 def get_logger(
     name: str,
-    level: Optional[str] = None,
+    level: str | None = None,
 ) -> logging.Logger:
     """
     Get a logger instance for a module.

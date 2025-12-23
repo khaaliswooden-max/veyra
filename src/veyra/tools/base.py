@@ -7,9 +7,9 @@ Defines the interface for tools that can be invoked by Veyra.
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any
 
 
 class ToolCategory(Enum):
@@ -37,8 +37,8 @@ class ToolCapability:
     max_execution_time: float = 60.0
 
     # Input/output schemas
-    input_schema: Optional[dict[str, Any]] = None
-    output_schema: Optional[dict[str, Any]] = None
+    input_schema: dict[str, Any] | None = None
+    output_schema: dict[str, Any] | None = None
 
 
 @dataclass
@@ -47,16 +47,16 @@ class ToolResult:
 
     success: bool
     output: Any
-    error: Optional[str] = None
+    error: str | None = None
 
     tool_name: str = ""
     invocation_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    timestamp: datetime = field(default_factory=datetime.utcnow)
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     execution_time_ms: float = 0.0
 
     # Audit trail
-    input_hash: Optional[str] = None
-    output_hash: Optional[str] = None
+    input_hash: str | None = None
+    output_hash: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -98,7 +98,7 @@ class Tool(ABC):
         """
         pass
 
-    async def validate_input(self, **kwargs: Any) -> tuple[bool, Optional[str]]:
+    async def validate_input(self, **_kwargs: Any) -> tuple[bool, str | None]:
         """
         Validate input before execution.
 
@@ -133,7 +133,7 @@ class ToolRegistry:
             return True
         return False
 
-    def get(self, name: str) -> Optional[Tool]:
+    def get(self, name: str) -> Tool | None:
         """Get a tool by name."""
         return self._tools.get(name)
 
@@ -184,9 +184,9 @@ class ToolRegistry:
             )
 
         # Execute
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
         result = await tool.invoke(**kwargs)
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
 
         result.tool_name = tool_name
         result.execution_time_ms = (end_time - start_time).total_seconds() * 1000

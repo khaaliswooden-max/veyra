@@ -4,10 +4,11 @@ Policy Engine
 Implements multi-stakeholder policy framework for governance decisions.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any
 
 
 class PolicyDecision(Enum):
@@ -53,8 +54,8 @@ class Policy:
     # Conditions
     applies_to: list[str] = field(default_factory=list)  # Action types
 
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class PolicyEngine:
@@ -123,7 +124,6 @@ class PolicyEngine:
             )
 
         # Evaluate policies in priority order
-        deny_reasons: list[str] = []
         audit_policies: list[str] = []
 
         for policy in applicable:
@@ -165,7 +165,7 @@ class PolicyEngine:
 
     def list_policies(
         self,
-        jurisdiction: Optional[str] = None,
+        jurisdiction: str | None = None,
         enabled_only: bool = True,
     ) -> list[Policy]:
         """List registered policies."""
@@ -193,8 +193,8 @@ def create_rate_limit_policy(
     """Create a rate limiting policy."""
     request_times: list[datetime] = []
 
-    def evaluate(context: dict[str, Any]) -> PolicyDecision:
-        now = datetime.utcnow()
+    def evaluate(_context: dict[str, Any]) -> PolicyDecision:
+        now = datetime.now(UTC)
         # Clean old requests
         cutoff = now.timestamp() - window_seconds
         request_times[:] = [t for t in request_times if t.timestamp() > cutoff]

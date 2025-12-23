@@ -3,8 +3,8 @@ Tests for VeyraCore
 """
 
 import pytest
-import asyncio
-from veyra import VeyraCore, VeyraConfig
+
+from veyra import VeyraConfig, VeyraCore
 
 
 class TestVeyraCore:

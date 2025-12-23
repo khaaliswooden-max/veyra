@@ -387,13 +387,13 @@ class MockBackend(BaseBackend):
         "I've analyzed the scenario accounting for the communication constraints:\n\n"
         "**State Estimation**: Given the {delay}-minute data age, current system state "
         "is estimated at 73% confidence. Key uncertainties include:\n"
-        "- Resource consumption rate (±5%)\n"
+        "- Resource consumption rate (+/-5%)\n"
         "- External condition changes\n\n"
         "**Action Priority**:\n"
         "1. HIGH: Stabilize primary systems (time-critical)\n"
         "2. MEDIUM: Optimize resource allocation\n"
         "3. LOW: Documentation and reporting\n\n"
-        "**Fallback Protocol**: If no response within {delay}×2 minutes, "
+        "**Fallback Protocol**: If no response within {delay}*2 minutes, "
         "initiate autonomous decision tree Alpha.",
     ]
 
@@ -538,7 +538,7 @@ class VeyraNano:
         # Simulate latency if enabled
         if self.config.simulate_latency:
             delay = random.uniform(*self.config.latency_range)
-            print(f"⏱  Simulating {delay:.1f}s interplanetary delay...")
+            print(f"[*] Simulating {delay:.1f}s interplanetary delay...")
             await asyncio.sleep(delay)
 
         # Generate response
@@ -735,7 +735,7 @@ async def run_benchmark(veyra: VeyraNano) -> dict[str, Any]:
     print("="*60)
 
     for task in tasks:
-        print(f"\n▶ Running {task.task_id} ({task.difficulty})...")
+        print(f"\n> Running {task.task_id} ({task.difficulty})...")
         
         result = await veyra.execute(task.prompt)
         score = benchmark.score(task, result.content, result.latency_ms)
@@ -780,10 +780,10 @@ async def run_benchmark(veyra: VeyraNano) -> dict[str, Any]:
 def print_banner():
     """Print startup banner."""
     print("""
-╔═══════════════════════════════════════════════════════════╗
-║  VEYRA NANO v{version:<44}║
-║  Minimal Autonomy LLM with Audit Trail                    ║
-╚═══════════════════════════════════════════════════════════╝
++===========================================================+
+|  VEYRA NANO v{version:<44}|
+|  Minimal Autonomy LLM with Audit Trail                    |
++===========================================================+
 """.format(version=__version__))
 
 
@@ -794,9 +794,9 @@ def show_audit(limit: int = 20):
     # Verify integrity
     valid, error = audit.verify_integrity()
     if valid:
-        print("✓ Audit chain integrity: VERIFIED")
+        print("[OK] Audit chain integrity: VERIFIED")
     else:
-        print(f"✗ Audit chain integrity: FAILED - {error}")
+        print(f"[X] Audit chain integrity: FAILED - {error}")
     
     print(f"\nTotal entries: {audit.count()}")
     print(f"\nRecent {limit} entries:")
@@ -840,7 +840,7 @@ def interactive_mode(veyra: VeyraNano):
             print(f"\n{result.content}\n")
             print(f"[{result.execution_id}] {result.latency_ms:.0f}ms | safety={result.safety_level.value}")
         else:
-            print(f"\n✗ Error: {result.error}\n")
+            print(f"\n[X] Error: {result.error}\n")
 
 
 def main():
@@ -889,10 +889,10 @@ Environment variables:
         audit = AuditTrail()
         valid, error = audit.verify_integrity()
         if valid:
-            print("✓ Audit chain integrity verified")
+            print("[OK] Audit chain integrity verified")
             print(f"  Total entries: {audit.count()}")
         else:
-            print(f"✗ Audit chain integrity FAILED: {error}")
+            print(f"[X] Audit chain integrity FAILED: {error}")
             sys.exit(1)
         return
 

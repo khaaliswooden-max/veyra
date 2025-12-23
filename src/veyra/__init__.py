@@ -8,7 +8,7 @@ operating in post-super-intelligence, multi-planetary contexts.
 
 __version__ = "0.1.0"
 
-from veyra.core import VeyraCore
 from veyra.config import VeyraConfig, load_config
+from veyra.core import VeyraCore
 
 __all__ = ["VeyraCore", "VeyraConfig", "load_config", "__version__"]

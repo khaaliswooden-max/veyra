@@ -5,8 +5,8 @@ Provides audit trails, policy enforcement, and multi-stakeholder governance
 for safe AI operations.
 """
 
-from veyra.governance.audit import AuditTrail, AuditEntry
-from veyra.governance.policy import Policy, PolicyEngine, PolicyDecision
+from veyra.governance.audit import AuditEntry, AuditTrail
+from veyra.governance.policy import Policy, PolicyDecision, PolicyEngine
 
 __all__ = [
     "AuditTrail",

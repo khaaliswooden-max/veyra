@@ -3,13 +3,14 @@ Tests for Benchmark Framework
 """
 
 import pytest
+
 from veyra import VeyraCore
 from veyra.benchmarks import (
+    BenchmarkFamily,
     BenchmarkRunner,
     CPLCBenchmark,
-    BenchmarkFamily,
 )
-from veyra.benchmarks.base import Difficulty, BenchmarkTask
+from veyra.benchmarks.base import BenchmarkTask, Difficulty
 
 
 class TestCPLCBenchmark:
@@ -49,14 +50,14 @@ class TestCPLCBenchmark:
         good_output = """
         ## Current State Assessment (85% confidence)
         Given the 10-minute communication delay, I estimate the current state...
-        
+
         ## Recommended Actions
         1. Step 1: Implement monitoring (Priority: High)
         2. Step 2: Execute backup protocol
-        
+
         ## Contingency Plans
         If the primary system fails, alternatively we should...
-        
+
         ## Information Requests
         - Request updated sensor data
         """

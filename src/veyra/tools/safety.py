@@ -6,7 +6,7 @@ Implements safety checks and constraints for tool execution.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Set
+from typing import Any
 
 
 class SafetyLevel(Enum):
@@ -25,7 +25,7 @@ class SafetyViolation:
     level: SafetyLevel
     rule: str
     description: str
-    context: Optional[dict[str, Any]] = None
+    context: dict[str, Any] | None = None
 
 
 class SafetyBoundary:
@@ -40,7 +40,7 @@ class SafetyBoundary:
         self,
         reversible_only: bool = False,
         require_confirmation: bool = False,
-        prohibited_operations: Optional[Set[str]] = None,
+        prohibited_operations: set[str] | None = None,
     ):
         """
         Initialize safety boundary.
@@ -60,8 +60,8 @@ class SafetyBoundary:
         self,
         operation_name: str,
         is_reversible: bool = True,
-        context: Optional[dict[str, Any]] = None,
-    ) -> tuple[SafetyLevel, Optional[SafetyViolation]]:
+        context: dict[str, Any] | None = None,
+    ) -> tuple[SafetyLevel, SafetyViolation | None]:
         """
         Check if an operation is allowed.
 

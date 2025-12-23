@@ -1,6 +1,7 @@
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Add src to python path for tests
 src_path = Path(__file__).parent.parent / "src"

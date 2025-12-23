@@ -6,10 +6,16 @@ Adapter for Anthropic's Claude models.
 
 import os
 import uuid
-from datetime import datetime
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from veyra.models.base import BaseModelBackend, ModelResponse
+
+# Try to import Anthropic client at module level for easier mocking in tests
+try:
+    from anthropic import AsyncAnthropic
+except ImportError:
+    AsyncAnthropic = None  # type: ignore[misc, assignment]
 
 
 class AnthropicBackend(BaseModelBackend):
@@ -25,7 +31,7 @@ class AnthropicBackend(BaseModelBackend):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         model: str = "claude-3-opus-20240229",
     ):
         """
@@ -42,9 +48,7 @@ class AnthropicBackend(BaseModelBackend):
     def _get_client(self) -> Any:
         """Lazy-load the Anthropic client."""
         if self._client is None:
-            try:
-                from anthropic import AsyncAnthropic
-            except ImportError:
+            if AsyncAnthropic is None:
                 raise ImportError(
                     "Anthropic package not installed. "
                     "Install with: pip install veyra[anthropic]"
@@ -64,14 +68,14 @@ class AnthropicBackend(BaseModelBackend):
         self,
         prompt: str,
         *,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 4096,
-        **kwargs: Any,
+        **_kwargs: Any,
     ) -> ModelResponse:
         """Generate a response using Anthropic API."""
         client = self._get_client()
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         # Build request
         request_kwargs: dict[str, Any] = {
@@ -89,7 +93,7 @@ class AnthropicBackend(BaseModelBackend):
 
         response = await client.messages.create(**request_kwargs)
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         latency_ms = (end_time - start_time).total_seconds() * 1000
 
         # Extract content from response

@@ -5,9 +5,10 @@ Handles YAML configuration files and environment variable overrides.
 """
 
 import os
-import yaml  # type: ignore[import-untyped]
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
+
+import yaml
 from pydantic import BaseModel, Field
 
 
@@ -47,7 +48,7 @@ class LoggingConfig(BaseModel):
     level: str = Field(
         default="INFO", description="Log level: DEBUG, INFO, WARNING, ERROR"
     )
-    file: Optional[str] = Field(default=None, description="Optional log file path")
+    file: str | None = Field(default=None, description="Optional log file path")
     structured: bool = Field(default=True, description="Use structured JSON logging")
 
 
@@ -89,7 +90,7 @@ class VeyraConfig(BaseModel):
         if not path.exists():
             raise FileNotFoundError(f"Config file not found: {path}")
 
-        with open(path, "r") as f:
+        with open(path) as f:
             data = yaml.safe_load(f) or {}
 
         return cls.from_dict(data)
@@ -107,29 +108,34 @@ class VeyraConfig(BaseModel):
 
         return cls(**data)
 
+    def apply_env_overrides(self) -> "VeyraConfig":
+        """
+        Apply environment variable overrides to this config.
+
+        Returns:
+            Self for chaining.
+        """
+        if backend := os.getenv("VEYRA_BACKEND"):
+            self.model.backend = backend
+        if log_level := os.getenv("VEYRA_LOG_LEVEL"):
+            self.logging.level = log_level
+        if log_file := os.getenv("VEYRA_LOG_FILE"):
+            self.logging.file = log_file
+        if os.getenv("VEYRA_SIMULATE_LATENCY", "").lower() == "true":
+            self.latency.simulate_latency = True
+        if os.getenv("VEYRA_WORLD_MODEL_ENABLED", "").lower() == "true":
+            self.world_model_enabled = True
+        if env := os.getenv("VEYRA_ENVIRONMENT"):
+            self.environment = env
+        return self
+
     @classmethod
     def from_env(cls) -> "VeyraConfig":
         """Create configuration from environment variables."""
-        config = cls()
-
-        # Override from environment
-        if backend := os.getenv("VEYRA_BACKEND"):
-            config.model.backend = backend
-        if log_level := os.getenv("VEYRA_LOG_LEVEL"):
-            config.logging.level = log_level
-        if log_file := os.getenv("VEYRA_LOG_FILE"):
-            config.logging.file = log_file
-        if os.getenv("VEYRA_SIMULATE_LATENCY", "").lower() == "true":
-            config.latency.simulate_latency = True
-        if os.getenv("VEYRA_WORLD_MODEL_ENABLED", "").lower() == "true":
-            config.world_model_enabled = True
-        if env := os.getenv("VEYRA_ENVIRONMENT"):
-            config.environment = env
-
-        return config
+        return cls().apply_env_overrides()
 
 
-def load_config(config_path: Optional[str] = None) -> VeyraConfig:
+def load_config(config_path: str | None = None) -> VeyraConfig:
     """
     Load configuration from file with environment variable overrides.
 
@@ -144,18 +150,4 @@ def load_config(config_path: Optional[str] = None) -> VeyraConfig:
     else:
         config = VeyraConfig()
 
-    # Apply environment overrides
-    if backend := os.getenv("VEYRA_BACKEND"):
-        config.model.backend = backend
-    if log_level := os.getenv("VEYRA_LOG_LEVEL"):
-        config.logging.level = log_level
-    if log_file := os.getenv("VEYRA_LOG_FILE"):
-        config.logging.file = log_file
-    if os.getenv("VEYRA_SIMULATE_LATENCY", "").lower() == "true":
-        config.latency.simulate_latency = True
-    if os.getenv("VEYRA_WORLD_MODEL_ENABLED", "").lower() == "true":
-        config.world_model_enabled = True
-    if env := os.getenv("VEYRA_ENVIRONMENT"):
-        config.environment = env
-
-    return config
+    return config.apply_env_overrides()

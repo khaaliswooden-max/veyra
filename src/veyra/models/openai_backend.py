@@ -6,10 +6,16 @@ Adapter for OpenAI's GPT models.
 
 import os
 import uuid
-from datetime import datetime
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from veyra.models.base import BaseModelBackend, ModelResponse
+
+# Try to import OpenAI client at module level for easier mocking in tests
+try:
+    from openai import AsyncOpenAI
+except ImportError:
+    AsyncOpenAI = None  # type: ignore[misc, assignment]
 
 
 class OpenAIBackend(BaseModelBackend):
@@ -25,9 +31,9 @@ class OpenAIBackend(BaseModelBackend):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         model: str = "gpt-4-turbo-preview",
-        organization: Optional[str] = None,
+        organization: str | None = None,
     ):
         """
         Initialize OpenAI backend.
@@ -45,9 +51,7 @@ class OpenAIBackend(BaseModelBackend):
     def _get_client(self) -> Any:
         """Lazy-load the OpenAI client."""
         if self._client is None:
-            try:
-                from openai import AsyncOpenAI
-            except ImportError:
+            if AsyncOpenAI is None:
                 raise ImportError(
                     "OpenAI package not installed. "
                     "Install with: pip install veyra[openai]"
@@ -70,14 +74,14 @@ class OpenAIBackend(BaseModelBackend):
         self,
         prompt: str,
         *,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 4096,
         **kwargs: Any,
     ) -> ModelResponse:
         """Generate a response using OpenAI API."""
         client = self._get_client()
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         messages = []
         if system_prompt:
@@ -92,7 +96,7 @@ class OpenAIBackend(BaseModelBackend):
             **kwargs,
         )
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         latency_ms = (end_time - start_time).total_seconds() * 1000
 
         choice = response.choices[0]

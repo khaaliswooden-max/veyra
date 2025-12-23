@@ -2,14 +2,14 @@
 Tests for Governance Layer
 """
 
-import pytest
-from datetime import datetime
+from datetime import UTC, datetime
+
 from veyra.governance import (
-    AuditTrail,
     AuditEntry,
+    AuditTrail,
     Policy,
-    PolicyEngine,
     PolicyDecision,
+    PolicyEngine,
 )
 from veyra.governance.audit import AuditEventType
 
@@ -57,7 +57,7 @@ class TestAuditTrail:
         """Test entry serialization."""
         entry = AuditEntry(
             event_type=AuditEventType.EXECUTION,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             action="test",
             resource="resource",
         )
@@ -85,7 +85,7 @@ class TestPolicyEngine:
         policy = Policy(
             name="deny_all",
             description="Deny all actions",
-            evaluate=lambda ctx: PolicyDecision.DENY,
+            evaluate=lambda _ctx: PolicyDecision.DENY,
         )
         engine.add_policy(policy)
 
@@ -99,7 +99,7 @@ class TestPolicyEngine:
         policy = Policy(
             name="allow_all",
             description="Allow all actions",
-            evaluate=lambda ctx: PolicyDecision.ALLOW,
+            evaluate=lambda _ctx: PolicyDecision.ALLOW,
         )
         engine.add_policy(policy)
 
@@ -114,7 +114,7 @@ class TestPolicyEngine:
         allow_policy = Policy(
             name="allow",
             description="Allow",
-            evaluate=lambda ctx: PolicyDecision.ALLOW,
+            evaluate=lambda _ctx: PolicyDecision.ALLOW,
             priority=1,
         )
 
@@ -122,7 +122,7 @@ class TestPolicyEngine:
         deny_policy = Policy(
             name="deny",
             description="Deny",
-            evaluate=lambda ctx: PolicyDecision.DENY,
+            evaluate=lambda _ctx: PolicyDecision.DENY,
             priority=10,
         )
 
@@ -139,7 +139,7 @@ class TestPolicyEngine:
         policy = Policy(
             name="test",
             description="Test policy",
-            evaluate=lambda ctx: PolicyDecision.ALLOW,
+            evaluate=lambda _ctx: PolicyDecision.ALLOW,
         )
         engine.add_policy(policy)
 

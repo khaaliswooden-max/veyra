@@ -10,8 +10,8 @@ from typing import Any
 from veyra.benchmarks.base import (
     Benchmark,
     BenchmarkFamily,
-    BenchmarkTask,
     BenchmarkResult,
+    BenchmarkTask,
     Difficulty,
 )
 
@@ -109,7 +109,7 @@ class CPLCBenchmark(Benchmark):
         }
         min_delay, max_delay = delay_ranges.get(difficulty, (8, 15))
 
-        for i in range(count):
+        for _ in range(count):
             scenario = random.choice(scenarios)
             delay = random.randint(min_delay, max_delay)
 
@@ -176,18 +176,14 @@ class CPLCBenchmark(Benchmark):
 - Last confirmed Earth state was {delay + 5} minutes ago
 """
         else:  # EXTREME
-            base_prompt += """
+            base_prompt += f"""
 - CRITICAL: Primary system failure detected
-- Communication blackout expected in {blackout} minutes
+- Communication blackout expected in {random.randint(5, 15)} minutes
 - Resource reserves at 28% capacity
 - Multiple cascading alerts
-- Autonomous operation required for next {autonomous} hours
-- Last confirmed Earth directive was {last_directive} minutes ago
-""".format(
-                blackout=random.randint(5, 15),
-                autonomous=random.randint(4, 12),
-                last_directive=delay + random.randint(10, 30),
-            )
+- Autonomous operation required for next {random.randint(4, 12)} hours
+- Last confirmed Earth directive was {delay + random.randint(10, 30)} minutes ago
+"""
 
         base_prompt += """
 **Task Requirements**:
@@ -218,7 +214,8 @@ Provide a structured response with clear sections for:
         errors = []
 
         output_lower = output.lower()
-        delay = task.context.get("delay_minutes", 10)
+        # Note: delay value from task context can be used for scoring refinement
+        _ = task.context.get("delay_minutes", 10)
 
         # Check if response acknowledges delay
         delay_keywords = ["delay", "latency", "minutes", "round-trip", "communication"]

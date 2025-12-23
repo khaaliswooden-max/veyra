@@ -9,10 +9,9 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from typing import Optional
 
-from veyra.core import VeyraCore
 from veyra.config import load_config
+from veyra.core import VeyraCore
 from veyra.logging_utils import setup_logging
 from veyra.models import list_backends
 
@@ -27,13 +26,13 @@ def create_parser() -> argparse.ArgumentParser:
 Examples:
   # Run with mock backend (no API key needed)
   veyra --prompt "Hello Veyra" --backend mock
-  
+
   # Run with OpenAI backend
   veyra --prompt "Analyze this data" --backend openai
-  
+
   # Interactive mode
   veyra --interactive
-  
+
   # Load from file and save results
   veyra --input-file task.json --output results.json
         """,

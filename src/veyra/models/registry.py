@@ -4,19 +4,18 @@ Model Backend Registry
 Central registry for managing model backends.
 """
 
-from typing import Any, Optional, Type
+from typing import Any
 
 from veyra.models.base import BaseModelBackend
 from veyra.models.mock import MockBackend
 
-
 # Global registry of available backends
-_REGISTRY: dict[str, Type[BaseModelBackend]] = {
+_REGISTRY: dict[str, type[BaseModelBackend]] = {
     "mock": MockBackend,
 }
 
 
-def register_backend(name: str, backend_class: Type[BaseModelBackend]) -> None:
+def register_backend(name: str, backend_class: type[BaseModelBackend]) -> None:
     """
     Register a new model backend.
 
@@ -49,8 +48,8 @@ def get_backend(name: str, **kwargs: Any) -> BaseModelBackend:
             _REGISTRY["openai"] = OpenAIBackend
         except ImportError:
             raise ValueError(
-                f"OpenAI backend requires the openai package. "
-                f"Install with: pip install veyra[openai]"
+                "OpenAI backend requires the openai package. "
+                "Install with: pip install veyra[openai]"
             )
 
     if name == "anthropic" and name not in _REGISTRY:
@@ -60,8 +59,8 @@ def get_backend(name: str, **kwargs: Any) -> BaseModelBackend:
             _REGISTRY["anthropic"] = AnthropicBackend
         except ImportError:
             raise ValueError(
-                f"Anthropic backend requires the anthropic package. "
-                f"Install with: pip install veyra[anthropic]"
+                "Anthropic backend requires the anthropic package. "
+                "Install with: pip install veyra[anthropic]"
             )
 
     if name not in _REGISTRY:

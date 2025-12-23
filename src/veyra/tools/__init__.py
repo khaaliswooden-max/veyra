@@ -5,7 +5,7 @@ Provides safe, auditable tool execution with capability declarations
 and safety boundaries.
 """
 
-from veyra.tools.base import Tool, ToolResult, ToolRegistry
+from veyra.tools.base import Tool, ToolRegistry, ToolResult
 from veyra.tools.safety import SafetyBoundary, SafetyLevel
 
 __all__ = [

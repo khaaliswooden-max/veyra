@@ -123,7 +123,7 @@ class TestOpenAIBackend:
             # Import after patching
             from veyra.models.openai_backend import OpenAIBackend
             
-            backend = OpenAIBackend(model="gpt-4-turbo-preview")
+            backend = OpenAIBackend(api_key="test-key", model="gpt-4-turbo-preview")
             response = await backend.generate("Hello!")
             
             assert response.content == "Hello! How can I help you?"
@@ -149,7 +149,7 @@ class TestOpenAIBackend:
             
             from veyra.models.openai_backend import OpenAIBackend
             
-            backend = OpenAIBackend()
+            backend = OpenAIBackend(api_key="test-key")
             await backend.generate("Test", system_prompt="Be helpful")
             
             # Verify system prompt was passed
@@ -167,7 +167,7 @@ class TestOpenAIBackend:
             
             from veyra.models.openai_backend import OpenAIBackend
             
-            backend = OpenAIBackend()
+            backend = OpenAIBackend(api_key="test-key")
             result = await backend.health_check()
             
             assert result is True
@@ -182,7 +182,7 @@ class TestOpenAIBackend:
             
             from veyra.models.openai_backend import OpenAIBackend
             
-            backend = OpenAIBackend()
+            backend = OpenAIBackend(api_key="test-key")
             result = await backend.health_check()
             
             assert result is False
@@ -208,7 +208,7 @@ class TestAnthropicBackend:
             
             from veyra.models.anthropic_backend import AnthropicBackend
             
-            backend = AnthropicBackend(model="claude-3-opus-20240229")
+            backend = AnthropicBackend(api_key="test-key", model="claude-3-opus-20240229")
             response = await backend.generate("Hello!")
             
             assert response.content == "Hello from Claude!"
@@ -233,7 +233,7 @@ class TestAnthropicBackend:
             
             from veyra.models.anthropic_backend import AnthropicBackend
             
-            backend = AnthropicBackend()
+            backend = AnthropicBackend(api_key="test-key")
             result = await backend.health_check()
             
             assert result is True

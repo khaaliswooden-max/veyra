@@ -9,8 +9,8 @@ import asyncio
 import hashlib
 import random
 import uuid
-from datetime import datetime
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from veyra.models.base import BaseModelBackend, ModelResponse
 
@@ -71,13 +71,13 @@ class MockBackend(BaseModelBackend):
         self,
         prompt: str,
         *,
-        system_prompt: Optional[str] = None,
-        temperature: float = 0.7,
-        max_tokens: int = 4096,
-        **kwargs: Any,
+        _system_prompt: str | None = None,
+        _temperature: float = 0.7,
+        _max_tokens: int = 4096,
+        **_kwargs: Any,
     ) -> ModelResponse:
         """Generate a mock response."""
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         # Simulate network latency
         latency = random.uniform(*self.latency_range)
@@ -122,7 +122,7 @@ class MockBackend(BaseModelBackend):
         prompt_tokens = len(prompt.split()) * 2  # Rough approximation
         completion_tokens = len(content.split()) * 2
 
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         latency_ms = (end_time - start_time).total_seconds() * 1000
 
         return ModelResponse(

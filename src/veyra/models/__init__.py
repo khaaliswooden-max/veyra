@@ -6,7 +6,7 @@ Provides adapters for various LLM providers and a mock backend for testing.
 
 from veyra.models.base import BaseModelBackend, ModelResponse
 from veyra.models.mock import MockBackend
-from veyra.models.registry import get_backend, register_backend, list_backends
+from veyra.models.registry import get_backend, list_backends, register_backend
 
 __all__ = [
     "BaseModelBackend",

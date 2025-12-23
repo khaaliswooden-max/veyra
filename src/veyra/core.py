@@ -5,15 +5,17 @@ Main entry point and orchestration for the Veyra system.
 """
 
 import asyncio
+import hashlib
 import json
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from veyra.config import VeyraConfig, load_config
+from veyra.governance.audit import AuditEntry, AuditEventType, AuditTrail
 from veyra.logging_utils import get_logger
-from veyra.models import get_backend, BaseModelBackend, ModelResponse
+from veyra.models import BaseModelBackend, ModelResponse, get_backend
 
 
 class ExecutionResult:
@@ -23,9 +25,9 @@ class ExecutionResult:
         self,
         content: str,
         success: bool = True,
-        error: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        model_response: Optional[ModelResponse] = None,
+        error: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        model_response: ModelResponse | None = None,
     ):
         self.content = content
         self.success = success
@@ -33,7 +35,7 @@ class ExecutionResult:
         self.metadata = metadata or {}
         self.model_response = model_response
         self.execution_id = str(uuid.uuid4())
-        self.timestamp = datetime.utcnow()
+        self.timestamp = datetime.now(UTC)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -84,8 +86,9 @@ Key principles:
 
     def __init__(
         self,
-        config: Optional[VeyraConfig] = None,
-        config_path: Optional[str] = None,
+        config: VeyraConfig | None = None,
+        config_path: str | None = None,
+        audit_trail: AuditTrail | None = None,
     ):
         """
         Initialize Veyra.
@@ -93,6 +96,7 @@ Key principles:
         Args:
             config: VeyraConfig instance
             config_path: Path to YAML config file (ignored if config provided)
+            audit_trail: Optional custom AuditTrail instance
         """
         if config is not None:
             self.config = config
@@ -102,11 +106,17 @@ Key principles:
             self.config = load_config()
 
         self.logger = get_logger(__name__, level=self.config.logging.level)
-        self._backend: Optional[BaseModelBackend] = None
+        self._backend: BaseModelBackend | None = None
         self._audit_log: list[dict[str, Any]] = []
 
+        # Initialize audit trail based on config
+        if self.config.governance.audit_enabled:
+            self._audit_trail: AuditTrail | None = audit_trail or AuditTrail()
+        else:
+            self._audit_trail = None
+
         self.logger.info(
-            f"Veyra Core initialized",
+            "Veyra Core initialized",
             extra={
                 "backend": self.config.model.backend,
                 "environment": self.config.environment,
@@ -130,11 +140,37 @@ Key principles:
 
         return self._backend
 
+    @property
+    def audit_trail(self) -> AuditTrail | None:
+        """Get the audit trail instance (None if audit disabled)."""
+        return self._audit_trail
+
+    def get_audit_trail(self) -> AuditTrail | None:
+        """Get the audit trail instance."""
+        return self._audit_trail
+
+    def verify_audit_integrity(self) -> tuple[bool, str | None]:
+        """
+        Verify the integrity of the audit trail.
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        if self._audit_trail is None:
+            return True, None
+        return self._audit_trail.verify_integrity()
+
+    @staticmethod
+    def _hash_input(input_data: str) -> str:
+        """Create a hash summary of input data for audit purposes."""
+        input_hash = hashlib.sha256(input_data.encode()).hexdigest()[:16]
+        return f"hash:{input_hash}:len:{len(input_data)}"
+
     def execute(
         self,
         task: dict[str, Any] | str,
         *,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         **kwargs: Any,
     ) -> ExecutionResult:
         """
@@ -148,7 +184,7 @@ Key principles:
         Returns:
             ExecutionResult with the response
         """
-        return asyncio.get_event_loop().run_until_complete(
+        return asyncio.run(
             self.execute_async(task, system_prompt=system_prompt, **kwargs)
         )
 
@@ -156,7 +192,7 @@ Key principles:
         self,
         task: dict[str, Any] | str,
         *,
-        system_prompt: Optional[str] = None,
+        system_prompt: str | None = None,
         **kwargs: Any,
     ) -> ExecutionResult:
         """
@@ -186,10 +222,10 @@ Key principles:
             )
 
         execution_id = str(uuid.uuid4())
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         self.logger.info(
-            f"Executing task",
+            "Executing task",
             extra={"execution_id": execution_id, "prompt_length": len(prompt)},
         )
 
@@ -236,7 +272,7 @@ Key principles:
             )
 
         # Record audit trail
-        end_time = datetime.utcnow()
+        end_time = datetime.now(UTC)
         audit_entry = {
             "execution_id": execution_id,
             "start_time": start_time.isoformat(),
@@ -251,8 +287,24 @@ Key principles:
         if self.config.governance.audit_enabled:
             self._audit_log.append(audit_entry)
 
+            # Also record in the new audit trail system
+            if self._audit_trail is not None:
+                self._audit_trail.record(
+                    event_type=AuditEventType.EXECUTION,
+                    action="execute",
+                    resource="veyra-core",
+                    outcome="success" if result.success else "failure",
+                    input_summary=self._hash_input(prompt),
+                    output_summary=f"len:{len(result.content)}",
+                    metadata={
+                        "execution_id": execution_id,
+                        "backend": self.config.model.backend,
+                        "duration_ms": audit_entry["duration_ms"],
+                    },
+                )
+
         self.logger.info(
-            f"Execution complete",
+            "Execution complete",
             extra=audit_entry,
         )
 
@@ -267,7 +319,7 @@ Key principles:
         """
         backend_healthy = await self.backend.health_check()
 
-        return {
+        result: dict[str, Any] = {
             "status": "healthy" if backend_healthy else "degraded",
             "backend": {
                 "name": self.backend.name,
@@ -278,8 +330,19 @@ Key principles:
                 "latency_simulation": self.config.latency.simulate_latency,
                 "audit_enabled": self.config.governance.audit_enabled,
             },
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
+
+        # Add audit information if enabled
+        if self.config.governance.audit_enabled and self._audit_trail is not None:
+            is_valid, _ = self._audit_trail.verify_integrity()
+            result["audit"] = {
+                "enabled": True,
+                "integrity_valid": is_valid,
+                "entry_count": len(self._audit_trail),
+            }
+
+        return result
 
     def get_audit_log(self) -> list[dict[str, Any]]:
         """Get the audit log of all executions."""
@@ -296,7 +359,7 @@ Key principles:
         """
         Execute the Veyra system (legacy interface).
         """
-        print(f"Veyra Core Initialized")
+        print("Veyra Core Initialized")
         print(f"  Backend: {self.config.model.backend}")
         print(f"  Environment: {self.config.environment}")
         print(f"  Version: {self.config.version}")

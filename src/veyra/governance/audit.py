@@ -8,10 +8,10 @@ import hashlib
 import json
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
 class AuditEventType(Enum):
@@ -44,13 +44,13 @@ class AuditEntry:
     outcome: str = "success"
 
     # Data
-    input_summary: Optional[str] = None
-    output_summary: Optional[str] = None
+    input_summary: str | None = None
+    output_summary: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     # Chain integrity
-    previous_hash: Optional[str] = None
-    entry_hash: Optional[str] = None
+    previous_hash: str | None = None
+    entry_hash: str | None = None
 
     def compute_hash(self) -> str:
         """Compute hash of this entry."""
@@ -92,7 +92,7 @@ class AuditTrail:
     Uses hash chaining to detect any modifications to historical records.
     """
 
-    def __init__(self, persist_path: Optional[Path] = None):
+    def __init__(self, persist_path: Path | None = None):
         """
         Initialize audit trail.
 
@@ -101,7 +101,7 @@ class AuditTrail:
         """
         self._entries: list[AuditEntry] = []
         self._persist_path = persist_path
-        self._last_hash: Optional[str] = None
+        self._last_hash: str | None = None
 
     def record(
         self,
@@ -110,9 +110,9 @@ class AuditTrail:
         resource: str = "",
         outcome: str = "success",
         actor: str = "system",
-        input_summary: Optional[str] = None,
-        output_summary: Optional[str] = None,
-        metadata: Optional[dict[str, Any]] = None,
+        input_summary: str | None = None,
+        output_summary: str | None = None,
+        metadata: dict[str, Any] | None = None,
     ) -> AuditEntry:
         """
         Record an audit event.
@@ -132,7 +132,7 @@ class AuditTrail:
         """
         entry = AuditEntry(
             event_type=event_type,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             actor=actor,
             action=action,
             resource=resource,
@@ -162,7 +162,7 @@ class AuditTrail:
         with open(self._persist_path, "a") as f:
             f.write(json.dumps(entry.to_dict()) + "\n")
 
-    def verify_integrity(self) -> tuple[bool, Optional[str]]:
+    def verify_integrity(self) -> tuple[bool, str | None]:
         """
         Verify the integrity of the audit chain.
 
@@ -189,9 +189,9 @@ class AuditTrail:
 
     def get_entries(
         self,
-        event_type: Optional[AuditEventType] = None,
-        actor: Optional[str] = None,
-        since: Optional[datetime] = None,
+        event_type: AuditEventType | None = None,
+        actor: str | None = None,
+        since: datetime | None = None,
         limit: int = 100,
     ) -> list[AuditEntry]:
         """

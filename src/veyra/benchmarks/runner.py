@@ -4,12 +4,8 @@ Benchmark Runner
 Executes benchmarks and aggregates results.
 """
 
-import asyncio
 import time
-from datetime import datetime
-from typing import Optional
 
-from veyra.core import VeyraCore
 from veyra.benchmarks.base import (
     Benchmark,
     BenchmarkFamily,
@@ -19,7 +15,7 @@ from veyra.benchmarks.base import (
     Difficulty,
 )
 from veyra.benchmarks.cplc import CPLCBenchmark
-
+from veyra.core import VeyraCore
 
 # Registry of benchmark implementations
 BENCHMARK_REGISTRY: dict[BenchmarkFamily, type[Benchmark]] = {
@@ -154,7 +150,7 @@ class BenchmarkRunner:
         self,
         count_per_family: int = 10,
         difficulty: Difficulty = Difficulty.MEDIUM,
-        families: Optional[list[BenchmarkFamily]] = None,
+        families: list[BenchmarkFamily] | None = None,
     ) -> BenchmarkSuiteResult:
         """
         Run the full benchmark suite.
@@ -218,4 +214,4 @@ class BenchmarkRunner:
 
 def list_benchmarks() -> list[str]:
     """List available benchmark families."""
-    return [f.value for f in BENCHMARK_REGISTRY.keys()]
+    return [f.value for f in BENCHMARK_REGISTRY]

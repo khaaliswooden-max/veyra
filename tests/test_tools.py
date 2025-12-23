@@ -3,12 +3,13 @@ Tests for Tools Layer
 """
 
 import pytest
+
 from veyra.tools import (
-    Tool,
-    ToolResult,
-    ToolRegistry,
     SafetyBoundary,
     SafetyLevel,
+    Tool,
+    ToolRegistry,
+    ToolResult,
 )
 from veyra.tools.base import ToolCapability, ToolCategory
 
@@ -45,7 +46,7 @@ class FailingTool(Tool):
             category=ToolCategory.SYSTEM,
         )
 
-    async def invoke(self, **kwargs) -> ToolResult:
+    async def invoke(self, **_kwargs) -> ToolResult:
         return ToolResult(
             success=False,
             output=None,
@@ -95,14 +96,13 @@ class TestToolRegistry:
         assert not result.success
         assert "not found" in result.error
 
-    def test_invocation_log(self):
+    @pytest.mark.asyncio
+    async def test_invocation_log(self):
         """Test invocation logging."""
         registry = ToolRegistry()
         registry.register(MockTool())
 
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(registry.invoke("mock_tool"))
+        await registry.invoke("mock_tool")
 
         log = registry.get_invocation_log()
         assert len(log) == 1
