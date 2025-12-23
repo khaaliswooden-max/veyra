@@ -10,6 +10,7 @@ from veyra.models import (
     get_backend,
     list_backends,
 )
+from veyra.models.registry import register_backend
 
 
 class TestMockBackend:
@@ -24,7 +25,7 @@ class TestMockBackend:
         assert isinstance(response, ModelResponse)
         assert len(response.content) > 0
         assert response.backend == "mock"
-        assert response.model == "veyra-mock-v1"
+        assert response.model == "veyra-mock"
 
     @pytest.mark.asyncio
     async def test_generate_deterministic(self):
@@ -109,6 +110,32 @@ class TestBackendRegistry:
         """Test getting unknown backend raises error."""
         with pytest.raises(ValueError, match="Unknown backend"):
             get_backend("nonexistent")
+
+    def test_get_mock_backend_with_kwargs(self):
+        """Test getting mock backend with custom parameters."""
+        backend = get_backend("mock", deterministic=True, latency_range=(0.1, 0.2))
+
+        assert isinstance(backend, MockBackend)
+        assert backend.deterministic is True
+
+    def test_register_custom_backend(self):
+        """Test registering a custom backend."""
+
+        class CustomBackend(MockBackend):
+            @property
+            def name(self) -> str:
+                return "custom"
+
+        register_backend("custom", CustomBackend)
+
+        backend = get_backend("custom")
+        assert backend.name == "custom"
+
+    def test_list_backends_returns_sorted(self):
+        """Test that list_backends returns sorted list."""
+        backends = list_backends()
+
+        assert backends == sorted(backends)
 
 
 class TestModelResponse:
