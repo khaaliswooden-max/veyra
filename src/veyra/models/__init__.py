@@ -10,10 +10,9 @@ from veyra.models.registry import get_backend, register_backend, list_backends
 
 __all__ = [
     "BaseModelBackend",
-    "ModelResponse", 
+    "ModelResponse",
     "MockBackend",
     "get_backend",
     "register_backend",
     "list_backends",
 ]
-

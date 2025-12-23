@@ -38,15 +38,17 @@ Examples:
   veyra --input-file task.json --output results.json
         """,
     )
-    
+
     # Input options
     parser.add_argument(
-        "--prompt", "-p",
+        "--prompt",
+        "-p",
         type=str,
         help="Prompt to execute",
     )
     parser.add_argument(
-        "--input-file", "-i",
+        "--input-file",
+        "-i",
         type=str,
         help="JSON file containing task(s) to execute",
     )
@@ -55,45 +57,51 @@ Examples:
         action="store_true",
         help="Run in interactive mode",
     )
-    
+
     # Output options
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         type=str,
         help="Output file for results (JSON)",
     )
     parser.add_argument(
-        "--quiet", "-q",
+        "--quiet",
+        "-q",
         action="store_true",
         help="Suppress output except results",
     )
-    
+
     # Model options
     parser.add_argument(
-        "--backend", "-b",
+        "--backend",
+        "-b",
         type=str,
         choices=list_backends(),
         help="Model backend to use",
     )
     parser.add_argument(
-        "--model", "-m",
+        "--model",
+        "-m",
         type=str,
         help="Specific model name (backend-dependent)",
     )
     parser.add_argument(
-        "--temperature", "-t",
+        "--temperature",
+        "-t",
         type=float,
         help="Sampling temperature (0.0-2.0)",
     )
-    
+
     # Configuration
     parser.add_argument(
-        "--config", "-c",
+        "--config",
+        "-c",
         type=str,
         default="configs/default.yaml",
         help="Path to configuration file",
     )
-    
+
     # System options
     parser.add_argument(
         "--simulate-latency",
@@ -101,12 +109,13 @@ Examples:
         help="Simulate interplanetary communication delays",
     )
     parser.add_argument(
-        "--environment", "-e",
+        "--environment",
+        "-e",
         type=str,
         choices=["earth", "mars", "lunar", "space"],
         help="Target environment",
     )
-    
+
     # Debug options
     parser.add_argument(
         "--debug",
@@ -123,7 +132,7 @@ Examples:
         action="store_true",
         help="Run health check and exit",
     )
-    
+
     return parser
 
 
@@ -139,20 +148,22 @@ def run_interactive(veyra: VeyraCore) -> None:
     print("║    /audit        - Show audit log                         ║")
     print("║    /clear        - Clear screen                           ║")
     print("╚═══════════════════════════════════════════════════════════╝\n")
-    
+
     while True:
         try:
             prompt = input("\033[36mveyra>\033[0m ").strip()
-            
+
             if not prompt:
                 continue
-            
+
             # Handle commands
             if prompt.lower() in ("/quit", "/exit", "quit", "exit"):
                 print("\nGoodbye! 🚀")
                 break
             elif prompt.lower() == "/health":
-                health = asyncio.get_event_loop().run_until_complete(veyra.health_check())
+                health = asyncio.get_event_loop().run_until_complete(
+                    veyra.health_check()
+                )
                 print(json.dumps(health, indent=2))
                 continue
             elif prompt.lower() == "/audit":
@@ -168,16 +179,16 @@ def run_interactive(veyra: VeyraCore) -> None:
             elif prompt.startswith("/"):
                 print(f"Unknown command: {prompt}")
                 continue
-            
+
             # Execute prompt
             print("\033[33mProcessing...\033[0m")
             result = veyra.execute(prompt)
-            
+
             if result.success:
                 print(f"\n\033[32m{result.content}\033[0m\n")
             else:
                 print(f"\n\033[31mError: {result.error}\033[0m\n")
-            
+
         except KeyboardInterrupt:
             print("\n\nInterrupted. Type /quit to exit.")
         except EOFError:
@@ -189,16 +200,16 @@ def main() -> None:
     """Main entry point."""
     parser = create_parser()
     args = parser.parse_args()
-    
+
     # Setup logging
     log_level = "DEBUG" if args.debug else "INFO"
     if args.quiet:
         log_level = "WARNING"
     setup_logging(level=log_level)
-    
+
     # Load configuration
     config = load_config(args.config if Path(args.config).exists() else None)
-    
+
     # Apply CLI overrides
     if args.backend:
         config.model.backend = args.backend
@@ -213,40 +224,40 @@ def main() -> None:
         config.latency.simulate_latency = True
     if args.environment:
         config.environment = args.environment
-    
+
     # Create Veyra instance
     veyra = VeyraCore(config=config)
-    
+
     # Handle health check
     if args.health_check:
         health = asyncio.get_event_loop().run_until_complete(veyra.health_check())
         print(json.dumps(health, indent=2))
         sys.exit(0 if health["status"] == "healthy" else 1)
-    
+
     # Handle interactive mode
     if args.interactive:
         run_interactive(veyra)
         return
-    
+
     # Handle input file
     if args.input_file:
         input_path = Path(args.input_file)
         if not input_path.exists():
             print(f"Error: Input file not found: {args.input_file}", file=sys.stderr)
             sys.exit(1)
-        
+
         with open(input_path) as f:
             tasks = json.load(f)
-        
+
         # Handle single task or list of tasks
         if isinstance(tasks, dict):
             tasks = [tasks]
-        
+
         results = []
         for task in tasks:
             result = veyra.execute(task)
             results.append(result.to_dict())
-        
+
         # Output results
         if args.output:
             with open(args.output, "w") as f:
@@ -254,13 +265,13 @@ def main() -> None:
             print(f"Results written to {args.output}")
         else:
             print(json.dumps(results, indent=2))
-        
+
         return
-    
+
     # Handle prompt
     if args.prompt:
         result = veyra.execute(args.prompt)
-        
+
         if args.output:
             with open(args.output, "w") as f:
                 json.dump(result.to_dict(), f, indent=2)
@@ -272,9 +283,9 @@ def main() -> None:
             else:
                 print(f"Error: {result.error}", file=sys.stderr)
                 sys.exit(1)
-        
+
         return
-    
+
     # No input specified - show help or run legacy mode
     if len(sys.argv) == 1:
         # No arguments - run legacy mode for backwards compatibility

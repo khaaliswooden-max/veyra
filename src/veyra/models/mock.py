@@ -18,16 +18,16 @@ from veyra.models.base import BaseModelBackend, ModelResponse
 class MockBackend(BaseModelBackend):
     """
     Mock backend that generates deterministic responses for testing.
-    
+
     Useful for:
     - Development without API keys
     - Testing pipeline logic
     - Benchmarking infrastructure
     - Demos and documentation
     """
-    
+
     name = "mock"
-    
+
     def __init__(
         self,
         latency_range: tuple[float, float] = (0.1, 0.5),
@@ -35,14 +35,14 @@ class MockBackend(BaseModelBackend):
     ):
         """
         Initialize mock backend.
-        
+
         Args:
             latency_range: Min/max simulated latency in seconds
             deterministic: If True, same prompt gives same response
         """
         self.latency_range = latency_range
         self.deterministic = deterministic
-        
+
         # Response templates for different query types
         self._templates = {
             "analyze": "Analysis complete. Based on the provided data, I've identified {count} key patterns. The primary finding is that {finding}. Confidence level: {confidence}%.",
@@ -50,7 +50,7 @@ class MockBackend(BaseModelBackend):
             "plan": "Strategic Plan:\n1. {step1}\n2. {step2}\n3. {step3}\n\nTimeline: {timeline}\nResource requirements: {resources}",
             "default": "Veyra Mock Response:\n\nProcessed input successfully. Key observations:\n- Input length: {input_len} characters\n- Complexity: {complexity}\n- Suggested action: {action}\n\nThis is a mock response for development and testing purposes.",
         }
-        
+
         self._findings = [
             "temporal correlation between events",
             "anomalous sensor readings in sector 7",
@@ -58,7 +58,7 @@ class MockBackend(BaseModelBackend):
             "communication latency exceeds threshold",
             "system stability within normal parameters",
         ]
-        
+
         self._actions = [
             "proceed with caution",
             "increase monitoring frequency",
@@ -66,7 +66,7 @@ class MockBackend(BaseModelBackend):
             "continue current operations",
             "escalate to human oversight",
         ]
-    
+
     async def generate(
         self,
         prompt: str,
@@ -78,18 +78,18 @@ class MockBackend(BaseModelBackend):
     ) -> ModelResponse:
         """Generate a mock response."""
         start_time = datetime.utcnow()
-        
+
         # Simulate network latency
         latency = random.uniform(*self.latency_range)
         await asyncio.sleep(latency)
-        
+
         # Generate deterministic seed from prompt if needed
         if self.deterministic:
             seed = int(hashlib.md5(prompt.encode()).hexdigest()[:8], 16)
             rng = random.Random(seed)
         else:
             rng = random.Random()
-        
+
         # Select template based on prompt keywords
         template_key = "default"
         prompt_lower = prompt.lower()
@@ -99,7 +99,7 @@ class MockBackend(BaseModelBackend):
             template_key = "recommend"
         elif any(word in prompt_lower for word in ["plan", "strategy", "schedule"]):
             template_key = "plan"
-        
+
         # Generate response content
         template = self._templates[template_key]
         content = template.format(
@@ -117,14 +117,14 @@ class MockBackend(BaseModelBackend):
             input_len=len(prompt),
             complexity=rng.choice(["low", "moderate", "high"]),
         )
-        
+
         # Calculate simulated token counts
         prompt_tokens = len(prompt.split()) * 2  # Rough approximation
         completion_tokens = len(content.split()) * 2
-        
+
         end_time = datetime.utcnow()
         latency_ms = (end_time - start_time).total_seconds() * 1000
-        
+
         return ModelResponse(
             content=content,
             model="veyra-mock-v1",
@@ -136,8 +136,7 @@ class MockBackend(BaseModelBackend):
             total_tokens=prompt_tokens + completion_tokens,
             request_id=str(uuid.uuid4()),
         )
-    
+
     async def health_check(self) -> bool:
         """Mock backend is always healthy."""
         return True
-

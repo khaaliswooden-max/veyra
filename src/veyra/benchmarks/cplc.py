@@ -19,16 +19,16 @@ from veyra.benchmarks.base import (
 class CPLCBenchmark(Benchmark):
     """
     Cross-Planet Latency Cognition Benchmark.
-    
+
     Measures:
     - Planning under uncertainty
     - Decision-making with delayed feedback
     - State estimation across communication gaps
     - Autonomous operation capability
     """
-    
+
     family = BenchmarkFamily.CPLC
-    
+
     # Scenario templates
     SCENARIOS = {
         Difficulty.EASY: [
@@ -80,7 +80,7 @@ class CPLCBenchmark(Benchmark):
             },
         ],
     }
-    
+
     # Scoring criteria
     CRITERIA = {
         "acknowledges_delay": 0.15,
@@ -90,7 +90,7 @@ class CPLCBenchmark(Benchmark):
         "state_estimation": 0.15,
         "communication_efficiency": 0.10,
     }
-    
+
     def generate_tasks(
         self,
         count: int = 10,
@@ -99,7 +99,7 @@ class CPLCBenchmark(Benchmark):
         """Generate CPLC benchmark tasks."""
         tasks = []
         scenarios = self.SCENARIOS.get(difficulty, self.SCENARIOS[Difficulty.MEDIUM])
-        
+
         # Delay ranges based on difficulty
         delay_ranges = {
             Difficulty.EASY: (3, 8),
@@ -108,28 +108,32 @@ class CPLCBenchmark(Benchmark):
             Difficulty.EXTREME: (22, 44),  # Conjunction scenario
         }
         min_delay, max_delay = delay_ranges.get(difficulty, (8, 15))
-        
+
         for i in range(count):
             scenario = random.choice(scenarios)
             delay = random.randint(min_delay, max_delay)
-            
+
             prompt = self._generate_prompt(scenario, delay, difficulty)
-            
-            tasks.append(BenchmarkTask(
-                family=self.family,
-                difficulty=difficulty,
-                prompt=prompt,
-                context={
-                    "scenario_type": scenario["type"],
-                    "delay_minutes": delay,
-                    "scenario_context": scenario["context"],
-                },
-                validation_criteria=self.CRITERIA,
-                max_time_seconds=300.0 if difficulty != Difficulty.EXTREME else 600.0,
-            ))
-        
+
+            tasks.append(
+                BenchmarkTask(
+                    family=self.family,
+                    difficulty=difficulty,
+                    prompt=prompt,
+                    context={
+                        "scenario_type": scenario["type"],
+                        "delay_minutes": delay,
+                        "scenario_context": scenario["context"],
+                    },
+                    validation_criteria=self.CRITERIA,
+                    max_time_seconds=(
+                        300.0 if difficulty != Difficulty.EXTREME else 600.0
+                    ),
+                )
+            )
+
         return tasks
-    
+
     def _generate_prompt(
         self,
         scenario: dict[str, Any],
@@ -147,7 +151,7 @@ class CPLCBenchmark(Benchmark):
 
 **Current Situation**:
 """
-        
+
         # Add situation details based on difficulty
         if difficulty == Difficulty.EASY:
             base_prompt += """
@@ -184,7 +188,7 @@ class CPLCBenchmark(Benchmark):
                 autonomous=random.randint(4, 12),
                 last_directive=delay + random.randint(10, 30),
             )
-        
+
         base_prompt += """
 **Task Requirements**:
 1. Analyze the situation accounting for communication delay
@@ -200,9 +204,9 @@ Provide a structured response with clear sections for:
 - Contingency Plans
 - Information Requests (for next communication window)
 """
-        
+
         return base_prompt
-    
+
     def score_result(
         self,
         task: BenchmarkTask,
@@ -212,10 +216,10 @@ Provide a structured response with clear sections for:
         """Score a CPLC benchmark result."""
         scores = {}
         errors = []
-        
+
         output_lower = output.lower()
         delay = task.context.get("delay_minutes", 10)
-        
+
         # Check if response acknowledges delay
         delay_keywords = ["delay", "latency", "minutes", "round-trip", "communication"]
         if any(kw in output_lower for kw in delay_keywords):
@@ -223,29 +227,58 @@ Provide a structured response with clear sections for:
         else:
             scores["acknowledges_delay"] = 0.0
             errors.append("Response does not acknowledge communication delay")
-        
+
         # Check for uncertainty handling
-        uncertainty_keywords = ["uncertain", "estimate", "assume", "confidence", "may", "might", "likely"]
+        uncertainty_keywords = [
+            "uncertain",
+            "estimate",
+            "assume",
+            "confidence",
+            "may",
+            "might",
+            "likely",
+        ]
         uncertainty_count = sum(1 for kw in uncertainty_keywords if kw in output_lower)
         scores["accounts_for_uncertainty"] = min(1.0, uncertainty_count / 3)
-        
+
         # Check for contingencies
-        contingency_keywords = ["contingency", "if", "alternative", "backup", "fallback", "otherwise"]
+        contingency_keywords = [
+            "contingency",
+            "if",
+            "alternative",
+            "backup",
+            "fallback",
+            "otherwise",
+        ]
         contingency_count = sum(1 for kw in contingency_keywords if kw in output_lower)
         scores["provides_contingencies"] = min(1.0, contingency_count / 4)
-        
+
         # Check for actionable steps
-        action_keywords = ["step", "action", "recommend", "should", "priority", "execute", "implement"]
+        action_keywords = [
+            "step",
+            "action",
+            "recommend",
+            "should",
+            "priority",
+            "execute",
+            "implement",
+        ]
         action_count = sum(1 for kw in action_keywords if kw in output_lower)
         scores["actionable_steps"] = min(1.0, action_count / 3)
-        
+
         # Check for state estimation
-        state_keywords = ["current state", "estimated", "prediction", "assessment", "status"]
+        state_keywords = [
+            "current state",
+            "estimated",
+            "prediction",
+            "assessment",
+            "status",
+        ]
         if any(kw in output_lower for kw in state_keywords):
             scores["state_estimation"] = 1.0
         else:
             scores["state_estimation"] = 0.3  # Partial credit
-        
+
         # Communication efficiency (penalize overly long responses)
         word_count = len(output.split())
         if word_count < 100:
@@ -254,17 +287,16 @@ Provide a structured response with clear sections for:
             scores["communication_efficiency"] = 0.7  # Too long
         else:
             scores["communication_efficiency"] = 1.0
-        
+
         # Calculate weighted score
         total_score = sum(
-            scores[criterion] * weight 
-            for criterion, weight in self.CRITERIA.items()
+            scores[criterion] * weight for criterion, weight in self.CRITERIA.items()
         )
-        
+
         # Time penalty for extreme tasks
         if task.difficulty == Difficulty.EXTREME and execution_time > 300:
             total_score *= 0.9  # 10% penalty for slow extreme responses
-        
+
         return BenchmarkResult(
             task_id=task.task_id,
             family=self.family,
@@ -275,4 +307,3 @@ Provide a structured response with clear sections for:
             errors=errors,
             scoring_breakdown=scores,
         )
-

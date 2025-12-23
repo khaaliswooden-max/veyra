@@ -6,10 +6,7 @@ from pathlib import Path
 src_path = Path(__file__).parent.parent / "src"
 sys.path.append(str(src_path))
 
+
 @pytest.fixture
 def sample_config():
-    return {
-        "system": {
-            "name": "Veyra Test"
-        }
-    }
+    return {"system": {"name": "Veyra Test"}}

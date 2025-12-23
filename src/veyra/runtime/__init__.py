@@ -15,4 +15,3 @@ __all__ = [
     "LatencySimulator",
     "calculate_mars_delay",
 ]
-

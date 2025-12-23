@@ -15,14 +15,14 @@ from veyra.models.base import BaseModelBackend, ModelResponse
 class OpenAIBackend(BaseModelBackend):
     """
     OpenAI API backend supporting GPT-4 and other models.
-    
+
     Requires:
         - openai package: pip install veyra[openai]
         - OPENAI_API_KEY environment variable
     """
-    
+
     name = "openai"
-    
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -31,7 +31,7 @@ class OpenAIBackend(BaseModelBackend):
     ):
         """
         Initialize OpenAI backend.
-        
+
         Args:
             api_key: OpenAI API key (defaults to OPENAI_API_KEY env var)
             model: Model name to use
@@ -41,7 +41,7 @@ class OpenAIBackend(BaseModelBackend):
         self.model = model
         self.organization = organization or os.getenv("OPENAI_ORG_ID")
         self._client: Any = None
-    
+
     def _get_client(self) -> Any:
         """Lazy-load the OpenAI client."""
         if self._client is None:
@@ -52,20 +52,20 @@ class OpenAIBackend(BaseModelBackend):
                     "OpenAI package not installed. "
                     "Install with: pip install veyra[openai]"
                 )
-            
+
             if not self.api_key:
                 raise ValueError(
                     "OpenAI API key not found. "
                     "Set OPENAI_API_KEY environment variable or pass api_key parameter."
                 )
-            
+
             self._client = AsyncOpenAI(
                 api_key=self.api_key,
                 organization=self.organization,
             )
-        
+
         return self._client
-    
+
     async def generate(
         self,
         prompt: str,
@@ -78,12 +78,12 @@ class OpenAIBackend(BaseModelBackend):
         """Generate a response using OpenAI API."""
         client = self._get_client()
         start_time = datetime.utcnow()
-        
+
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        
+
         response = await client.chat.completions.create(
             model=self.model,
             messages=messages,
@@ -91,13 +91,13 @@ class OpenAIBackend(BaseModelBackend):
             max_tokens=max_tokens,
             **kwargs,
         )
-        
+
         end_time = datetime.utcnow()
         latency_ms = (end_time - start_time).total_seconds() * 1000
-        
+
         choice = response.choices[0]
         usage = response.usage
-        
+
         return ModelResponse(
             content=choice.message.content or "",
             model=response.model,
@@ -109,9 +109,11 @@ class OpenAIBackend(BaseModelBackend):
             total_tokens=usage.total_tokens if usage else 0,
             request_id=response.id,
             trace_id=str(uuid.uuid4()),
-            raw_response=response.model_dump() if hasattr(response, 'model_dump') else None,
+            raw_response=(
+                response.model_dump() if hasattr(response, "model_dump") else None
+            ),
         )
-    
+
     async def health_check(self) -> bool:
         """Check if OpenAI API is accessible."""
         try:
@@ -121,4 +123,3 @@ class OpenAIBackend(BaseModelBackend):
             return True
         except Exception:
             return False
-

@@ -16,7 +16,7 @@ from typing import Any, Optional
 
 class AuditEventType(Enum):
     """Types of auditable events."""
-    
+
     EXECUTION = "execution"
     TOOL_INVOCATION = "tool_invocation"
     POLICY_CHECK = "policy_check"
@@ -29,29 +29,29 @@ class AuditEventType(Enum):
 @dataclass
 class AuditEntry:
     """A single audit log entry."""
-    
+
     event_type: AuditEventType
     timestamp: datetime
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    
+
     # Actor information
     actor: str = "system"
     actor_type: str = "internal"
-    
+
     # Event details
     action: str = ""
     resource: str = ""
     outcome: str = "success"
-    
+
     # Data
     input_summary: Optional[str] = None
     output_summary: Optional[str] = None
     metadata: dict[str, Any] = field(default_factory=dict)
-    
+
     # Chain integrity
     previous_hash: Optional[str] = None
     entry_hash: Optional[str] = None
-    
+
     def compute_hash(self) -> str:
         """Compute hash of this entry."""
         data = {
@@ -65,7 +65,7 @@ class AuditEntry:
             "previous_hash": self.previous_hash,
         }
         return hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
-    
+
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
@@ -88,21 +88,21 @@ class AuditEntry:
 class AuditTrail:
     """
     Maintains a tamper-evident audit trail.
-    
+
     Uses hash chaining to detect any modifications to historical records.
     """
-    
+
     def __init__(self, persist_path: Optional[Path] = None):
         """
         Initialize audit trail.
-        
+
         Args:
             persist_path: Optional path to persist audit log
         """
         self._entries: list[AuditEntry] = []
         self._persist_path = persist_path
         self._last_hash: Optional[str] = None
-    
+
     def record(
         self,
         event_type: AuditEventType,
@@ -116,7 +116,7 @@ class AuditTrail:
     ) -> AuditEntry:
         """
         Record an audit event.
-        
+
         Args:
             event_type: Type of event
             action: Action performed
@@ -126,7 +126,7 @@ class AuditTrail:
             input_summary: Summary of input (not full data for privacy)
             output_summary: Summary of output
             metadata: Additional metadata
-            
+
         Returns:
             The created audit entry
         """
@@ -142,49 +142,49 @@ class AuditTrail:
             metadata=metadata or {},
             previous_hash=self._last_hash,
         )
-        
+
         # Compute and store hash
         entry.entry_hash = entry.compute_hash()
         self._last_hash = entry.entry_hash
-        
+
         self._entries.append(entry)
-        
+
         # Persist if configured
         if self._persist_path:
             self._append_to_file(entry)
-        
+
         return entry
-    
+
     def _append_to_file(self, entry: AuditEntry) -> None:
         """Append entry to persistent storage."""
         with open(self._persist_path, "a") as f:
             f.write(json.dumps(entry.to_dict()) + "\n")
-    
+
     def verify_integrity(self) -> tuple[bool, Optional[str]]:
         """
         Verify the integrity of the audit chain.
-        
+
         Returns:
             Tuple of (is_valid, error_message)
         """
         if not self._entries:
             return True, None
-        
+
         previous_hash = None
         for i, entry in enumerate(self._entries):
             # Check previous hash linkage
             if entry.previous_hash != previous_hash:
                 return False, f"Hash chain broken at entry {i}"
-            
+
             # Verify entry hash
             computed_hash = entry.compute_hash()
             if entry.entry_hash != computed_hash:
                 return False, f"Entry {i} hash mismatch"
-            
+
             previous_hash = entry.entry_hash
-        
+
         return True, None
-    
+
     def get_entries(
         self,
         event_type: Optional[AuditEventType] = None,
@@ -194,32 +194,31 @@ class AuditTrail:
     ) -> list[AuditEntry]:
         """
         Query audit entries.
-        
+
         Args:
             event_type: Filter by event type
             actor: Filter by actor
             since: Filter by timestamp
             limit: Maximum entries to return
-            
+
         Returns:
             List of matching entries
         """
         entries = self._entries
-        
+
         if event_type:
             entries = [e for e in entries if e.event_type == event_type]
         if actor:
             entries = [e for e in entries if e.actor == actor]
         if since:
             entries = [e for e in entries if e.timestamp >= since]
-        
+
         return entries[-limit:]
-    
+
     def export(self, path: Path) -> None:
         """Export full audit trail to file."""
         with open(path, "w") as f:
             json.dump([e.to_dict() for e in self._entries], f, indent=2)
-    
+
     def __len__(self) -> int:
         return len(self._entries)
-
