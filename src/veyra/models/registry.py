@@ -4,7 +4,7 @@ Model Backend Registry
 Central registry for managing model backends.
 """
 
-from typing import Optional, Type
+from typing import Any, Optional, Type
 
 from veyra.models.base import BaseModelBackend
 from veyra.models.mock import MockBackend
@@ -27,7 +27,7 @@ def register_backend(name: str, backend_class: Type[BaseModelBackend]) -> None:
     _REGISTRY[name] = backend_class
 
 
-def get_backend(name: str, **kwargs) -> BaseModelBackend:
+def get_backend(name: str, **kwargs: Any) -> BaseModelBackend:
     """
     Get an instance of a registered backend.
 

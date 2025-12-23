@@ -9,7 +9,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional
 import heapq
 
 
@@ -94,11 +94,13 @@ class TaskScheduler:
         self._queue: list[Task] = []
         self._running: dict[str, Task] = {}
         self._completed: dict[str, Task] = {}
-        self._handlers: dict[str, Callable] = {}
+        self._handlers: dict[str, Callable[[dict[str, Any]], Awaitable[Any]]] = {}
         self._running_count = 0
         self._lock = asyncio.Lock()
 
-    def register_handler(self, task_type: str, handler: Callable) -> None:
+    def register_handler(
+        self, task_type: str, handler: Callable[[dict[str, Any]], Awaitable[Any]]
+    ) -> None:
         """Register a handler for a task type."""
         self._handlers[task_type] = handler
 

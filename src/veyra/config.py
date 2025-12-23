@@ -5,7 +5,7 @@ Handles YAML configuration files and environment variable overrides.
 """
 
 import os
-import yaml
+import yaml  # type: ignore[import-untyped]
 from pathlib import Path
 from typing import Any, Optional
 from pydantic import BaseModel, Field

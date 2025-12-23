@@ -8,7 +8,7 @@ import json
 import logging
 import sys
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 
 class StructuredFormatter(logging.Formatter):
@@ -142,6 +142,7 @@ def setup_logging(
     root_logger.handlers.clear()
 
     # Choose formatter
+    formatter: Union[StructuredFormatter, PrettyFormatter]
     if structured:
         formatter = StructuredFormatter()
     else:
