@@ -71,12 +71,15 @@ class MockBackend(BaseModelBackend):
         self,
         prompt: str,
         *,
-        _system_prompt: str | None = None,
-        _temperature: float = 0.7,
-        _max_tokens: int = 4096,
-        **_kwargs: Any,
+        system_prompt: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+        **kwargs: Any,
     ) -> ModelResponse:
         """Generate a mock response."""
+        # Unused parameters (for interface compatibility)
+        _ = system_prompt, temperature, max_tokens, kwargs
+
         start_time = datetime.now(UTC)
 
         # Simulate network latency
@@ -127,7 +130,7 @@ class MockBackend(BaseModelBackend):
 
         return ModelResponse(
             content=content,
-            model="veyra-mock-v1",
+            model="veyra-mock",
             backend=self.name,
             created_at=end_time,
             latency_ms=latency_ms,

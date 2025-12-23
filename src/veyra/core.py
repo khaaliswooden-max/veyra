@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from veyra.config import VeyraConfig, load_config
-from veyra.governance.audit import AuditEntry, AuditEventType, AuditTrail
+from veyra.governance.audit import AuditEventType, AuditTrail
 from veyra.logging_utils import get_logger
 from veyra.models import BaseModelBackend, ModelResponse, get_backend
 
